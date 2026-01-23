@@ -1,0 +1,42 @@
+# Python
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+
+# Cache and temporary files
+.cache/
+*.log
+*.tmp
+
+# Vector store files
+*.index
+*.faiss
+vector_store/
+
+# Cloned repositories
+repos/
+cloned_repos/
+
+# OS
+.DS_Store
+Thumbs.db

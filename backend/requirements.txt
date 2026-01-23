@@ -1,0 +1,26 @@
+# FastAPI and server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Repository cloning
+gitpython==3.1.40
+
+# Code analysis
+radon==6.0.1
+
+# Dependency graphs
+networkx==3.3
+
+# Vector store
+faiss-cpu==1.8.0.post1
+
+# LLM and embeddings
+langchain==0.3.0
+langchain-openai==0.2.0
+openai==1.54.0
+
+# Data validation
+pydantic==2.9.2
+
+# Utilities
+python-dotenv==1.0.1
