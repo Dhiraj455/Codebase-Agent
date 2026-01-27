@@ -471,6 +471,105 @@ class CodeChunkingService:
             chunks = self.chunk_file(file_path)
             all_chunks.extend(chunks)
         return all_chunks
+    
+    def chunk_text_file(self, file_path: str, max_chunk_size: int = 2000) -> List[Dict[str, Any]]:
+        """
+        Chunk a non-Python text file (JavaScript, TypeScript, etc.) into smaller segments.
+        
+        Args:
+            file_path: Path to the file
+            max_chunk_size: Maximum characters per chunk
+            
+        Returns:
+            List of chunk dictionaries
+        """
+        file_path_obj = Path(file_path)
+        
+        if not file_path_obj.exists():
+            return []
+        
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                source_code = f.read()
+                lines = source_code.splitlines()
+        except Exception as e:
+            print(f"Error reading file {file_path}: {e}")
+            return []
+        
+        chunks = []
+        current_chunk_lines = []
+        current_chunk_size = 0
+        chunk_start_line = 1
+        
+        for i, line in enumerate(lines, start=1):
+            line_size = len(line) + 1  # +1 for newline
+            
+            # If adding this line would exceed max size, save current chunk
+            if current_chunk_size + line_size > max_chunk_size and current_chunk_lines:
+                chunk_content = "\n".join(current_chunk_lines)
+                chunks.append({
+                    "chunk_id": f"{file_path}::chunk_{len(chunks) + 1}",
+                    "file_path": file_path,
+                    "file_name": file_path_obj.name,
+                    "chunk_type": "text",
+                    "name": f"{file_path_obj.stem}_chunk_{len(chunks) + 1}",
+                    "content": chunk_content,
+                    "start_line": chunk_start_line,
+                    "end_line": i - 1,
+                    "metadata": {
+                        "file_extension": file_path_obj.suffix,
+                        "language": self._detect_language(file_path_obj.suffix),
+                    },
+                })
+                
+                # Start new chunk
+                current_chunk_lines = [line]
+                current_chunk_size = line_size
+                chunk_start_line = i
+            else:
+                current_chunk_lines.append(line)
+                current_chunk_size += line_size
+        
+        # Add remaining chunk
+        if current_chunk_lines:
+            chunk_content = "\n".join(current_chunk_lines)
+            chunks.append({
+                "chunk_id": f"{file_path}::chunk_{len(chunks) + 1}",
+                "file_path": file_path,
+                "file_name": file_path_obj.name,
+                "chunk_type": "text",
+                "name": f"{file_path_obj.stem}_chunk_{len(chunks) + 1}",
+                "content": chunk_content,
+                "start_line": chunk_start_line,
+                "end_line": len(lines),
+                "metadata": {
+                    "file_extension": file_path_obj.suffix,
+                    "language": self._detect_language(file_path_obj.suffix),
+                },
+            })
+        
+        return chunks
+    
+    def _detect_language(self, extension: str) -> str:
+        """Detect programming language from file extension."""
+        language_map = {
+            ".js": "JavaScript",
+            ".jsx": "JavaScript",
+            ".ts": "TypeScript",
+            ".tsx": "TypeScript",
+            ".html": "HTML",
+            ".css": "CSS",
+            ".json": "JSON",
+            ".md": "Markdown",
+            ".java": "Java",
+            ".cpp": "C++",
+            ".c": "C",
+            ".go": "Go",
+            ".rs": "Rust",
+            ".rb": "Ruby",
+            ".php": "PHP",
+        }
+        return language_map.get(extension.lower(), "Unknown")
 
     def get_chunk_summary(self, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
