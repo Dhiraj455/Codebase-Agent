@@ -151,12 +151,11 @@ class CodeChunkingService:
         content_parts = []
 
         if imports.strip():
-            content_parts.append("
             content_parts.append(imports)
             content_parts.append("")
 
         if cls.get("docstring"):
-            content_parts.append(f'')
+            content_parts.append(cls.get("docstring"))
             content_parts.append("")
 
         class_code = "\n".join(class_lines)
@@ -247,12 +246,11 @@ class CodeChunkingService:
         content_parts = []
 
         if imports.strip():
-            content_parts.append("
             content_parts.append(imports)
             content_parts.append("")
 
         if func.get("docstring"):
-            content_parts.append(f'')
+            content_parts.append(func.get("docstring"))
             content_parts.append("")
 
         func_code = "\n".join(func_lines)
@@ -301,7 +299,6 @@ class CodeChunkingService:
         content_parts = []
 
         if imports.strip():
-            content_parts.append("
             content_parts.append(imports)
             content_parts.append("")
 

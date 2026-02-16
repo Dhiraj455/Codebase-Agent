@@ -135,7 +135,39 @@ class LLMReasoner:
         complexity_metrics: Dict[str, Any],
     ) -> str:
 
-        prompt = 
+        prompt = """Analyze the codebase structure and provide an architecture summary.
+
+Code Structure:
+{code_structure}
+
+Dependency Graph:
+{dependency_graph}
+
+Complexity Metrics:
+{complexity_metrics}
+
+Provide:
+1. Architecture Type
+2. Key Modules
+3. Data Flow
+4. Risks
+5. Strengths
+6. Recommendations
+
+Return your analysis as a JSON object with the following structure:
+{{
+    "architecture_type": "string",
+    "key_modules": ["module1", "module2", ...],
+    "data_flow": "description of data flow",
+    "risks": [
+        {{"severity": "high|medium|low", "description": "risk description"}},
+        ...
+    ],
+    "strengths": ["strength1", "strength2", ...],
+    "recommendations": ["recommendation1", "recommendation2", ...]
+}}
+
+Be specific, actionable, and focus on architectural concerns rather than code-level details."""
 
         formatted_prompt = prompt.format(
             code_structure=json.dumps(code_structure, indent=2),
@@ -153,7 +185,11 @@ class LLMReasoner:
     ) -> Dict[str, Any]:
 
         try:
-            full_prompt = f
+            full_prompt = f"""You are a senior software architect. Always respond with valid JSON only.
+
+{prompt}
+
+IMPORTANT: Respond ONLY with valid JSON. Do not include any markdown formatting, code blocks, or explanatory text. Just the JSON object."""
 
             generation_config = genai.types.GenerationConfig(
                 temperature=0.3,
@@ -321,10 +357,27 @@ class LLMReasoner:
         if not self.model:
             raise ValueError("LLM model not available")
 
-        prompt = f
+        prompt = f"""Analyze this repository structure and provide an architecture summary.
+
+Repository Structure:
+- Total files: {repo_structure.get('total_files', 0)}
+- Languages: {', '.join(repo_structure.get('languages', []))}
+- File types: {json.dumps(repo_structure.get('file_types', {}), indent=2)}
+
+Provide an architecture analysis as JSON with:
+- architecture_type
+- key_modules
+- data_flow
+- risks
+- strengths
+- recommendations"""
 
         try:
-            full_prompt = f
+            full_prompt = f"""You are a senior software architect. Always respond with valid JSON only.
+
+{prompt}
+
+IMPORTANT: Respond ONLY with valid JSON. Do not include any markdown formatting, code blocks, or explanatory text. Just the JSON object."""
 
             generation_config = genai.types.GenerationConfig(
                 temperature=0.3,
@@ -374,15 +427,22 @@ class LLMReasoner:
             ]
         )
 
-        prompt = f
+        prompt = f"""Answer the following question about the codebase:
+
+Question: {question}
+
+Relevant Code Context:
+{chunk_context}"""
 
         if context:
-            prompt += f"\n
+            prompt += f"\n\nAdditional Context: {json.dumps(context, indent=2)}"
 
         prompt += "\n\nProvide a clear, accurate answer based on the code context provided."
 
         try:
-            full_prompt = f
+            full_prompt = f"""You are a helpful code assistant. Answer questions about the codebase accurately and concisely.
+
+{prompt}"""
 
             generation_config = genai.types.GenerationConfig(
                 temperature=0.3,
@@ -409,7 +469,9 @@ class LLMReasoner:
 
         context = f"Repository: {repo_name}\n" if repo_name else ""
 
-        prompt = f
+        prompt = f"""{context}Question: {question}
+
+Answer the question based on your knowledge of software development and best practices."""
 
         try:
             response = self.model.generate_content(prompt)
@@ -430,10 +492,29 @@ class LLMReasoner:
         if not self.model:
             raise ValueError("LLM model not available")
 
-        prompt = f
+        prompt = f"""Analyze this repository and detect code smells and issues.
+
+Repository Structure:
+- Total files: {repo_structure.get('total_files', 0)}
+- Languages: {', '.join(repo_structure.get('languages', []))}
+
+Architecture Summary:
+{json.dumps(architecture_summary, indent=2)}
+
+Detect code smells, anti-patterns, and issues. Return as JSON array with:
+- issue: name of the issue
+- severity: high/medium/low
+- description: detailed description
+- location: file or module where found
+- impact: impact on codebase
+- suggestion: how to fix"""
 
         try:
-            full_prompt = f
+            full_prompt = f"""You are a senior software engineer. Always respond with valid JSON only.
+
+{prompt}
+
+IMPORTANT: Respond ONLY with valid JSON array. Do not include any markdown formatting, code blocks, or explanatory text. Just the JSON array."""
 
             generation_config = genai.types.GenerationConfig(
                 temperature=0.3,
@@ -507,7 +588,17 @@ class LLMReasoner:
 
         key_modules_str = ', '.join(key_modules) if key_modules else 'None detected'
 
-        prompt = f
+        prompt = f"""Generate a brief project description for this repository.
+
+Repository Structure:
+- Total files: {repo_structure.get('total_files', 0)}
+- Languages: {', '.join(repo_structure.get('languages', []))}
+- Key modules: {key_modules_str}
+- Architecture type: {arch_type}
+
+Based on the repository structure and architecture, provide a concise 2-3 sentence description of what this project does, its main purpose, and key technologies used.
+
+Return only the description text, no markdown formatting or quotes."""
 
         try:
             response = self.model.generate_content(prompt)
