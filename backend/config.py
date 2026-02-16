@@ -1,16 +1,11 @@
-"""
-Configuration management for the backend application.
-"""
-
 import os
 from pathlib import Path
 from typing import Optional
 
 
 class Settings:
-    """Application settings loaded from environment variables."""
 
-    # API Configuration
+    API_HOST: str = os.getenv("HOST", "0.0.0.0")
     API_HOST: str = os.getenv("HOST", "0.0.0.0")
     API_PORT: int = int(os.getenv("PORT", 8000))
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
@@ -33,18 +28,10 @@ class Settings:
 
     @classmethod
     def validate(cls) -> bool:
-        """
-        Validate that required settings are present.
-        
-        Returns:
-            True if all required settings are present
-        """
-        # Google Gemini API key is optional (some features won't work without it)
         return True
 
     @classmethod
     def get_cors_origins(cls) -> list:
-        """Get CORS origins, including any from environment."""
         origins = cls.CORS_ORIGINS.copy()
         
         # Add any additional origins from environment

@@ -1,13 +1,8 @@
-"""
-Pydantic models for API request/response schemas.
-"""
-
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
 
 class AnalyzeRequest(BaseModel):
-    """Request model for repository analysis."""
 
     repo_url: str = Field(..., description="GitHub repository URL to analyze")
     store_name: Optional[str] = Field(
@@ -16,7 +11,6 @@ class AnalyzeRequest(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
-    """Response model for repository analysis."""
 
     success: bool = Field(..., description="Whether analysis was successful")
     repo_name: str = Field(..., description="Name of the analyzed repository")
@@ -31,14 +25,10 @@ class AnalyzeResponse(BaseModel):
     refactoring_strategies: List[Dict[str, Any]] = Field(
         ..., description="List of refactoring strategies"
     )
-    dependency_graph: Dict[str, Any] = Field(
-        ..., description="Dependency graph data"
-    )
     statistics: Dict[str, Any] = Field(..., description="Analysis statistics")
 
 
 class QuestionRequest(BaseModel):
-    """Request model for asking questions."""
 
     question: str = Field(..., description="Question about the codebase")
     analysis_id: Optional[str] = Field(
@@ -50,7 +40,6 @@ class QuestionRequest(BaseModel):
 
 
 class QuestionResponse(BaseModel):
-    """Response model for questions."""
 
     answer: str = Field(..., description="LLM-generated answer")
     sources: List[Dict[str, Any]] = Field(
@@ -58,26 +47,7 @@ class QuestionResponse(BaseModel):
     )
 
 
-class GraphRequest(BaseModel):
-    """Request model for getting dependency graph."""
-
-    repo_name: str = Field(..., description="Repository name")
-    analysis_id: Optional[str] = Field(
-        None, description="Analysis ID (optional)"
-    )
-
-
-class GraphResponse(BaseModel):
-    """Response model for dependency graph."""
-
-    nodes: List[Dict[str, Any]] = Field(..., description="Graph nodes")
-    edges: List[Dict[str, Any]] = Field(..., description="Graph edges")
-    cycles: List[List[str]] = Field(..., description="Detected cycles")
-    statistics: Dict[str, Any] = Field(..., description="Graph statistics")
-
-
 class CodeSmell(BaseModel):
-    """Model for a code smell/issue."""
 
     issue: str = Field(..., description="Name of the code smell or issue")
     severity: str = Field(
@@ -92,7 +62,6 @@ class CodeSmell(BaseModel):
 
 
 class RefactoringStep(BaseModel):
-    """Model for a single refactoring step."""
 
     step_number: int = Field(..., description="Ordered step number")
     description: str = Field(..., description="What to do in this step")
@@ -103,7 +72,6 @@ class RefactoringStep(BaseModel):
 
 
 class RefactoringSuggestion(BaseModel):
-    """Model for a complete refactoring strategy."""
 
     issue_description: str = Field(
         ..., description="Description of the issue being addressed"
@@ -129,7 +97,6 @@ class RefactoringSuggestion(BaseModel):
 
 
 class CodeSmell(BaseModel):
-    """Model for a code smell/issue."""
 
     issue: str = Field(..., description="Name of the code smell or issue")
     severity: str = Field(
@@ -144,7 +111,6 @@ class CodeSmell(BaseModel):
 
 
 class RefactoringStep(BaseModel):
-    """Model for a single refactoring step."""
 
     step_number: int = Field(..., description="Ordered step number")
     description: str = Field(..., description="What to do in this step")
@@ -155,7 +121,6 @@ class RefactoringStep(BaseModel):
 
 
 class RefactoringSuggestion(BaseModel):
-    """Model for a complete refactoring strategy."""
 
     issue_description: str = Field(
         ..., description="Description of the issue being addressed"

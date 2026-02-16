@@ -44,12 +44,6 @@ interface AnalysisData {
     prerequisites?: string[];
     testing_considerations?: string[];
   }>;
-  dependency_graph: {
-    nodes: Array<Record<string, unknown>>;
-    edges: Array<Record<string, unknown>>;
-    cycles: string[][];
-    statistics: Record<string, unknown>;
-  };
   statistics: {
     files_analyzed: number;
     total_classes: number;
@@ -64,33 +58,34 @@ interface AnalysisData {
 export default function AnalysisPage() {
   const router = useRouter();
   
-  // Initialize state from sessionStorage
-  const getInitialData = (): AnalysisData | null => {
-    if (typeof window === "undefined") return null;
+  // Initialize state as null to ensure server/client match
+  const [data, setData] = useState<AnalysisData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Load data from sessionStorage only on client side
     const storedData = sessionStorage.getItem("analysis_data");
     if (storedData) {
       try {
-        return JSON.parse(storedData) as AnalysisData;
+        const parsedData = JSON.parse(storedData) as AnalysisData;
+        setData(parsedData);
+        setLoading(false);
       } catch (e) {
         console.error("Failed to parse stored data", e);
+        setError("Failed to load analysis data");
+        setLoading(false);
       }
-    }
-    return null;
-  };
-
-  const [data] = useState<AnalysisData | null>(getInitialData);
-  const [loading] = useState(false);
-  const [error] = useState("");
-
-  useEffect(() => {
-    // Check if we have analysis_id, redirect if not
-    if (!data) {
+    } else {
+      // Check if we have analysis_id, redirect if not
       const analysisId = sessionStorage.getItem("analysis_id");
       if (!analysisId) {
         router.push("/");
+      } else {
+        setLoading(false);
       }
     }
-  }, [data, router]);
+  }, [router]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
@@ -186,12 +181,6 @@ export default function AnalysisPage() {
               </p>
             </div>
             <div className="flex gap-3">
-              <Link
-                href="/graph"
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
-                View Graph
-              </Link>
               <Link
                 href="/chat"
                 className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"

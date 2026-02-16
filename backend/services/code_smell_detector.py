@@ -1,8 +1,4 @@
-"""
-Code Smell Detection Service
 
-Combines AST metrics and LLM analysis to detect code smells and architectural issues.
-"""
 
 import json
 from pathlib import Path
@@ -15,7 +11,7 @@ from .llm_reasoner import LLMReasoner
 
 
 class CodeSmell(BaseModel):
-    """Structured model for a code smell/issue."""
+
 
     issue: str = Field(description="Name of the code smell or issue")
     severity: str = Field(description="Severity level: high, medium, or low")
@@ -28,7 +24,7 @@ class CodeSmell(BaseModel):
 
 
 class CodeSmellDetector:
-    """Service for detecting code smells using metrics and LLM analysis."""
+
 
     def __init__(
         self,
@@ -36,14 +32,7 @@ class CodeSmellDetector:
         dependency_graph_builder: Optional[DependencyGraphBuilder] = None,
         llm_reasoner: Optional[LLMReasoner] = None,
     ):
-        """
-        Initialize the code smell detector.
 
-        Args:
-            code_analyzer: Optional CodeAnalyzer instance
-            dependency_graph_builder: Optional DependencyGraphBuilder instance
-            llm_reasoner: Optional LLMReasoner instance
-        """
         self.code_analyzer = code_analyzer or CodeAnalyzer()
         self.dependency_graph_builder = dependency_graph_builder or DependencyGraphBuilder(
             code_analyzer=self.code_analyzer
@@ -64,48 +53,45 @@ class CodeSmellDetector:
         file_analyses: List[Dict[str, Any]],
         dependency_graph_data: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        Detect code smells across the codebase.
 
-        Args:
-            file_analyses: List of file analysis results from code_analyzer
-            dependency_graph_data: Optional dependency graph data
-
-        Returns:
-            List of detected code smells, prioritized by severity
-        """
         all_smells = []
 
         metric_smells = self._detect_metric_based_smells(file_analyses)
         all_smells.extend(metric_smells)
+        print(f"  Metric-based detection found {len(metric_smells)} smells")
 
         if dependency_graph_data:
             dependency_smells = self._detect_dependency_smells(
                 file_analyses, dependency_graph_data
             )
             all_smells.extend(dependency_smells)
+            print(f"  Dependency-based detection found {len(dependency_smells)} smells")
 
         if self.llm_reasoner:
             try:
                 llm_smells = self._detect_llm_based_smells(file_analyses)
                 all_smells.extend(llm_smells)
+                print(f"  LLM-based detection found {len(llm_smells)} smells")
             except Exception as e:
-                print(f"LLM-based detection failed: {e}")
+                print(f"  LLM-based detection failed: {e}")
 
-        return self._prioritize_smells(all_smells)
+        prioritized = self._prioritize_smells(all_smells)
+
+        if not prioritized and self.llm_reasoner:
+            print("  No metric-based smells found, trying LLM fallback...")
+            try:
+                fallback_smells = self._detect_llm_based_smells(file_analyses)
+                prioritized.extend(fallback_smells)
+                print(f"  LLM fallback found {len(fallback_smells)} smells")
+            except Exception as e:
+                print(f"  LLM fallback also failed: {e}")
+
+        return prioritized
 
     def _detect_metric_based_smells(
         self, file_analyses: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """
-        Detect code smells using AST metrics.
 
-        Args:
-            file_analyses: List of file analysis results
-
-        Returns:
-            List of detected code smells
-        """
         smells = []
 
         for analysis in file_analyses:
@@ -114,7 +100,7 @@ class CodeSmellDetector:
 
             file_path = analysis.get("file_path", "unknown")
             file_name = analysis.get("file_name", "unknown")
-            
+
             relative_path = self._get_relative_path_display(file_path, file_name)
 
             for cls in analysis.get("classes", []):
@@ -143,13 +129,13 @@ class CodeSmellDetector:
     def _get_relative_path_display(self, file_path: str, file_name: str) -> str:
         if not file_path or file_path == "unknown":
             return file_name
-        
+
         path_obj = Path(file_path)
         if not path_obj.is_absolute():
             return str(path_obj).replace("\\", "/")
-        
+
         path_str = str(path_obj).replace("\\", "/")
-        
+
         repo_indicators = [
             "repos/", "backend/", "frontend/", "src/", "app/", "lib/", 
             "components/", "services/", "utils/", "models/", "controllers/",
@@ -160,7 +146,7 @@ class CodeSmellDetector:
                 parts = path_str.split(indicator, 1)
                 if len(parts) > 1:
                     return indicator + parts[1]
-        
+
         parts = path_obj.parts
         if len(parts) >= 3:
             return "/".join(parts[-3:])
@@ -168,23 +154,13 @@ class CodeSmellDetector:
             return "/".join(parts[-2:])
         elif len(parts) == 1:
             return parts[0]
-        
+
         return file_name
 
     def _detect_god_class(
         self, cls: Dict[str, Any], file_path: str, file_name: str
     ) -> List[Dict[str, Any]]:
-        """
-        Detect God Class anti-pattern.
 
-        Args:
-            cls: Class information from analysis
-            file_path: Path to the file
-            file_name: Name of the file
-
-        Returns:
-            List of detected god class smells
-        """
         smells = []
         method_count = len(cls.get("methods", []))
         attribute_count = len(cls.get("attributes", []))
@@ -220,18 +196,7 @@ class CodeSmellDetector:
         file_path: str,
         file_name: str,
     ) -> List[Dict[str, Any]]:
-        """
-        Detect functions with high cyclomatic complexity.
 
-        Args:
-            func: Function information
-            complexity_data: Complexity metrics for the file
-            file_path: Path to the file
-            file_name: Name of the file
-
-        Returns:
-            List of detected complexity smells
-        """
         smells = []
 
         func_complexity = None
@@ -274,17 +239,7 @@ class CodeSmellDetector:
     def _detect_missing_docstrings(
         self, analysis: Dict[str, Any], file_path: str, file_name: str
     ) -> List[Dict[str, Any]]:
-        """
-        Detect missing docstrings.
 
-        Args:
-            analysis: File analysis results
-            file_path: Path to the file
-            file_name: Name of the file
-
-        Returns:
-            List of missing docstring smells
-        """
         smells = []
 
         for cls in analysis.get("classes", []):
@@ -317,17 +272,7 @@ class CodeSmellDetector:
     def _detect_large_functions(
         self, analysis: Dict[str, Any], file_path: str, file_name: str
     ) -> List[Dict[str, Any]]:
-        """
-        Detect functions that are too large.
 
-        Args:
-            analysis: File analysis results
-            file_path: Path to the file
-            file_name: Name of the file
-
-        Returns:
-            List of large function smells
-        """
         smells = []
 
         for func in analysis.get("functions", []):
@@ -350,16 +295,7 @@ class CodeSmellDetector:
         file_analyses: List[Dict[str, Any]],
         dependency_graph_data: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
-        """
-        Detect dependency-related code smells.
 
-        Args:
-            file_analyses: List of file analysis results
-            dependency_graph_data: Dependency graph data
-
-        Returns:
-            List of dependency-related smells
-        """
         smells = []
 
         cycles = dependency_graph_data.get("cycles", [])
@@ -389,7 +325,7 @@ class CodeSmellDetector:
                             cycle_files_display.append(path_obj.name)
                     else:
                         cycle_files_display.append(str(path_obj).replace("\\", "/"))
-                
+
                 smells.append({
                     "issue": "Circular Dependency",
                     "severity": "high",
@@ -411,7 +347,7 @@ class CodeSmellDetector:
             if dep_count > 10:
                 path_obj = Path(file_path)
                 file_name = path_obj.name
-                
+
                 if path_obj.is_absolute():
                     parts = path_obj.parts
                     if len(parts) >= 2:
@@ -430,7 +366,7 @@ class CodeSmellDetector:
                         location = file_name
                 else:
                     location = str(path_obj).replace("\\", "/")
-                
+
                 smells.append({
                     "issue": "Tight Coupling",
                     "severity": "medium",
@@ -445,15 +381,7 @@ class CodeSmellDetector:
     def _detect_llm_based_smells(
         self, file_analyses: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """
-        Use LLM to detect nuanced code smells.
 
-        Args:
-            file_analyses: List of file analysis results
-
-        Returns:
-            List of LLM-detected code smells
-        """
         if not self.llm_reasoner:
             return []
 
@@ -482,29 +410,7 @@ class CodeSmellDetector:
             ]
         }
 
-        prompt = f"""You are a code quality expert analyzing a Python codebase for code smells.
-
-## Code Structure:
-{json.dumps(context, indent=2)}
-
-## Your Task:
-Identify code smells and anti-patterns that may not be caught by static metrics alone. Look for:
-- Design pattern violations
-- Naming issues
-- Code duplication patterns
-- Architectural issues
-- Best practice violations
-
-Return a JSON array of code smells, each with:
-- "issue": name of the issue
-- "severity": "high", "medium", or "low"
-- "description": detailed description
-- "location": file or module name
-- "impact": impact on codebase
-- "suggestion": how to fix
-
-Return only valid JSON array, no markdown.
-"""
+        prompt = f
 
         try:
             response = self.llm_reasoner.client.chat.completions.create(
@@ -542,11 +448,11 @@ Return only valid JSON array, no markdown.
                         smell["location"] = "Unknown location"
                     if not smell.get("impact") or smell["impact"] == "":
                         smell["impact"] = "Impact not specified"
-                    
+
                     validated = CodeSmell(**smell)
                     validated_smells.append(validated.model_dump())
                 except Exception as e:
-                    print(f"⚠ Skipping invalid code smell entry: {e}")
+                    print(f" Skipping invalid code smell entry: {e}")
                     continue
 
             return validated_smells
@@ -556,15 +462,7 @@ Return only valid JSON array, no markdown.
             return []
 
     def _prioritize_smells(self, smells: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Prioritize code smells by severity and ensure all required fields are present.
 
-        Args:
-            smells: List of detected code smells
-
-        Returns:
-            Prioritized list (high -> medium -> low) with all required fields
-        """
         for smell in smells:
             if not smell.get("location") or smell["location"] == "":
                 smell["location"] = (
@@ -572,13 +470,13 @@ Return only valid JSON array, no markdown.
                     smell.get("file_name") or 
                     "Unknown location"
                 )
-            
+
             if not smell.get("impact") or smell["impact"] == "":
                 smell["impact"] = (
                     smell.get("recommendation") or 
                     "Impact not specified"
                 )
-        
+
         severity_order = {"high": 0, "medium": 1, "low": 2}
 
         def sort_key(smell):
@@ -588,15 +486,7 @@ Return only valid JSON array, no markdown.
         return sorted(smells, key=sort_key)
 
     def get_smell_summary(self, smells: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Get summary statistics of detected code smells.
 
-        Args:
-            smells: List of code smells
-
-        Returns:
-            Summary dictionary
-        """
         severity_counts = {"high": 0, "medium": 0, "low": 0}
         issue_types = {}
 

@@ -15,7 +15,6 @@ export interface AnalyzeResponse {
   architecture_summary: Record<string, unknown>;
   code_smells: Array<Record<string, unknown>>;
   refactoring_strategies: Array<Record<string, unknown>>;
-  dependency_graph: Record<string, unknown>;
   statistics: Record<string, unknown>;
 }
 
@@ -34,18 +33,6 @@ export interface QuestionResponse {
     score: number;
     preview: string;
   }>;
-}
-
-export interface GraphQueryParams {
-  repo_name: string;
-  analysis_id?: string;
-}
-
-export interface GraphResponse {
-  nodes: Array<Record<string, unknown>>;
-  edges: Array<Record<string, unknown>>;
-  cycles: string[][];
-  statistics: Record<string, unknown>;
 }
 
 export interface ApiError {

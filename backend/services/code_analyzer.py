@@ -1,9 +1,4 @@
-"""
-Static Code Analysis Service using AST and Multi-Language Support
 
-Analyzes code files to extract classes, functions, imports, and complexity metrics.
-Supports Python (AST), JavaScript/TypeScript, Java, C#, Go, and other languages (regex-based).
-"""
 
 import ast
 import inspect
@@ -16,10 +11,10 @@ from radon.raw import analyze
 
 
 class CodeAnalyzer:
-    """Service for static code analysis using AST parsing (Python) and regex patterns (other languages)."""
+
 
     def __init__(self):
-        """Initialize the code analyzer."""
+
         self.language_map = {
             ".py": "python",
             ".js": "javascript",
@@ -41,36 +36,15 @@ class CodeAnalyzer:
         }
 
     def _detect_language(self, file_path: str) -> str:
-        """Detect programming language from file extension."""
+
         ext = Path(file_path).suffix.lower()
         return self.language_map.get(ext, "unknown")
 
     def analyze_file(self, file_path: str) -> Dict[str, Any]:
-        """
-        Analyze a code file and extract structured information.
-        Supports Python (AST) and other languages (regex-based).
 
-        Args:
-            file_path: Path to the code file
-
-        Returns:
-            Dictionary containing:
-            {
-                "file_path": "...",
-                "file_name": "...",
-                "language": "...",
-                "classes": [...],
-                "functions": [...],
-                "imports": [...],
-                "module_variables": [...],
-                "complexity": {...},
-                "metrics": {...},
-                "errors": [...]
-            }
-        """
         file_path_obj = Path(file_path)
         language = self._detect_language(file_path)
-        
+
         if not file_path_obj.exists():
             return {
                 "file_path": str(file_path),
@@ -104,7 +78,7 @@ class CodeAnalyzer:
             return self._analyze_non_python_file(file_path, file_path_obj, source_code, language)
 
     def _analyze_python_file(self, file_path: str, file_path_obj: Path, source_code: str) -> Dict[str, Any]:
-        """Analyze Python file using AST."""
+
         try:
             tree = ast.parse(source_code, filename=file_path)
         except SyntaxError as e:
@@ -153,15 +127,15 @@ class CodeAnalyzer:
         }
 
     def _analyze_non_python_file(self, file_path: str, file_path_obj: Path, source_code: str, language: str) -> Dict[str, Any]:
-        """Analyze non-Python file using regex patterns."""
+
         lines = source_code.splitlines()
-        
+
         classes = self._extract_classes_regex(source_code, language, lines)
-        
+
         functions = self._extract_functions_regex(source_code, language, lines)
-        
+
         imports = self._extract_imports_regex(source_code, language, lines)
-        
+
         code_metrics = {
             "lines_of_code": len([l for l in lines if l.strip() and not l.strip().startswith("//")]),
             "total_lines": len(lines),
@@ -181,16 +155,7 @@ class CodeAnalyzer:
         }
 
     def _extract_classes(self, tree: ast.AST, source_code: str) -> List[Dict[str, Any]]:
-        """
-        Extract all classes from the AST.
 
-        Args:
-            tree: Parsed AST tree
-            source_code: Original source code for extracting docstrings
-
-        Returns:
-            List of class information dictionaries
-        """
         classes = []
 
         for node in ast.walk(tree):
@@ -224,16 +189,7 @@ class CodeAnalyzer:
         return classes
 
     def _extract_functions(self, tree: ast.AST, source_code: str) -> List[Dict[str, Any]]:
-        """
-        Extract all module-level functions from the AST.
 
-        Args:
-            tree: Parsed AST tree
-            source_code: Original source code for extracting docstrings
-
-        Returns:
-            List of function information dictionaries
-        """
         functions = []
 
         for node in ast.walk(tree):
@@ -257,16 +213,7 @@ class CodeAnalyzer:
     def _extract_function_info(
         self, node: ast.FunctionDef, source_code: str
     ) -> Dict[str, Any]:
-        """
-        Extract detailed information about a function.
 
-        Args:
-            node: FunctionDef AST node
-            source_code: Original source code
-
-        Returns:
-            Function information dictionary
-        """
         parameters = []
         for arg in node.args.args:
             param_info = {
@@ -297,15 +244,7 @@ class CodeAnalyzer:
         }
 
     def _extract_imports(self, tree: ast.AST) -> List[Dict[str, Any]]:
-        """
-        Extract all import statements.
 
-        Args:
-            tree: Parsed AST tree
-
-        Returns:
-            List of import information dictionaries
-        """
         imports = []
 
         for node in ast.walk(tree):
@@ -334,16 +273,7 @@ class CodeAnalyzer:
     def _extract_module_variables(
         self, tree: ast.AST, source_code: str
     ) -> List[Dict[str, Any]]:
-        """
-        Extract module-level variables.
 
-        Args:
-            tree: Parsed AST tree
-            source_code: Original source code
-
-        Returns:
-            List of module variable information dictionaries
-        """
         module_variables = []
         top_level_nodes = [node for node in tree.body if isinstance(node, ast.Assign)]
 
@@ -364,19 +294,10 @@ class CodeAnalyzer:
         return module_variables
 
     def _calculate_complexity(self, source_code: str, file_path: str) -> Dict[str, Any]:
-        """
-        Calculate cyclomatic complexity using radon.
 
-        Args:
-            source_code: Source code string
-            file_path: Path to the file
-
-        Returns:
-            Complexity metrics dictionary
-        """
         try:
             complexity_results = cc_visit(source_code)
-            
+
             complexity_by_function = []
             for item in complexity_results:
                 complexity_by_function.append({
@@ -407,18 +328,10 @@ class CodeAnalyzer:
             }
 
     def _calculate_code_metrics(self, source_code: str) -> Dict[str, Any]:
-        """
-        Calculate basic code metrics using radon.
 
-        Args:
-            source_code: Source code string
-
-        Returns:
-            Code metrics dictionary
-        """
         try:
             raw_metrics = analyze(source_code)
-            
+
             return {
                 "loc": raw_metrics.loc,
                 "lloc": raw_metrics.lloc,
@@ -434,15 +347,7 @@ class CodeAnalyzer:
             }
 
     def _get_node_name(self, node: ast.AST) -> Optional[str]:
-        """
-        Get a string representation of an AST node.
 
-        Args:
-            node: AST node
-
-        Returns:
-            String representation or None
-        """
         if node is None:
             return None
 
@@ -464,15 +369,7 @@ class CodeAnalyzer:
             return type(node).__name__
 
     def _get_decorator_name(self, node: ast.AST) -> str:
-        """
-        Get a string representation of a decorator.
 
-        Args:
-            node: AST node (decorator)
-
-        Returns:
-            String representation
-        """
         if isinstance(node, ast.Name):
             return node.id
         elif isinstance(node, ast.Attribute):
@@ -489,9 +386,9 @@ class CodeAnalyzer:
             return type(node).__name__
 
     def _extract_classes_regex(self, source_code: str, language: str, lines: List[str]) -> List[Dict[str, Any]]:
-        """Extract classes from non-Python files using regex patterns."""
+
         classes = []
-        
+
         if language in ["javascript", "typescript", "java", "csharp", "cpp", "c"]:
             pattern = r'(?:public\s+|private\s+|protected\s+|abstract\s+|final\s+)*class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w\s,]+)?\s*\{?'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -507,7 +404,7 @@ class CodeAnalyzer:
                     "methods": [],
                     "attributes": [],
                 })
-        
+
         elif language == "go":
             pattern = r'type\s+(\w+)\s+(?:struct|interface)\s*\{'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -523,7 +420,7 @@ class CodeAnalyzer:
                     "methods": [],
                     "attributes": [],
                 })
-        
+
         elif language == "ruby":
             pattern = r'class\s+(\w+)(?:\s+<\s+\w+)?'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -539,7 +436,7 @@ class CodeAnalyzer:
                     "methods": [],
                     "attributes": [],
                 })
-        
+
         elif language == "php":
             pattern = r'(?:abstract\s+|final\s+)?class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w\s,]+)?\s*\{'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -555,7 +452,7 @@ class CodeAnalyzer:
                     "methods": [],
                     "attributes": [],
                 })
-        
+
         elif language == "swift":
             pattern = r'(?:class|struct|enum)\s+(\w+)(?:\s*:\s*[\w\s,]+)?\s*\{'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -571,7 +468,7 @@ class CodeAnalyzer:
                     "methods": [],
                     "attributes": [],
                 })
-        
+
         elif language in ["kotlin", "scala"]:
             pattern = r'(?:public\s+|private\s+|protected\s+|open\s+|abstract\s+|data\s+|sealed\s+)*class\s+(\w+)(?:\s*\([^)]*\))?(?:\s*:\s*[\w\s,]+)?\s*\{?'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -587,13 +484,13 @@ class CodeAnalyzer:
                     "methods": [],
                     "attributes": [],
                 })
-        
+
         return classes
 
     def _extract_functions_regex(self, source_code: str, language: str, lines: List[str]) -> List[Dict[str, Any]]:
-        """Extract functions from non-Python files using regex patterns."""
+
         functions = []
-        
+
         if language in ["javascript", "typescript"]:
             pattern = r'(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:\([^)]*\)|async\s*\([^)]*\))\s*=>)'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -608,7 +505,7 @@ class CodeAnalyzer:
                         "parameter_count": 0,
                         "parameters": [],
                     })
-        
+
         elif language in ["java", "csharp"]:
             pattern = r'(?:public|private|protected|static|\w+)*\s+\w+\s+(\w+)\s*\([^)]*\)'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -625,7 +522,7 @@ class CodeAnalyzer:
                         "parameter_count": param_count,
                         "parameters": [],
                     })
-        
+
         elif language == "go":
             pattern = r'func\s+(?:\([^)]*\)\s+)?(\w+)\s*\([^)]*\)'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -639,13 +536,13 @@ class CodeAnalyzer:
                     "parameter_count": 0,
                     "parameters": [],
                 })
-        
+
         return functions
 
     def _extract_imports_regex(self, source_code: str, language: str, lines: List[str]) -> List[Dict[str, Any]]:
-        """Extract imports from non-Python files using regex patterns."""
+
         imports = []
-        
+
         if language in ["javascript", "typescript"]:
             pattern1 = r"import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)\s+from\s+)?['\"]([^'\"]+)['\"]"
             for match in re.finditer(pattern1, source_code, re.MULTILINE):
@@ -657,7 +554,7 @@ class CodeAnalyzer:
                         "line_number": source_code[:match.start()].count('\n') + 1,
                         "type": "import",
                     })
-            
+
             pattern2 = r"require\(['\"]([^'\"]+)['\"]\)"
             for match in re.finditer(pattern2, source_code, re.MULTILINE):
                 import_path = match.group(1)
@@ -668,7 +565,7 @@ class CodeAnalyzer:
                         "line_number": source_code[:match.start()].count('\n') + 1,
                         "type": "require",
                     })
-            
+
             pattern3 = r"import\(['\"]([^'\"]+)['\"]\)"
             for match in re.finditer(pattern3, source_code, re.MULTILINE):
                 import_path = match.group(1)
@@ -679,7 +576,7 @@ class CodeAnalyzer:
                         "line_number": source_code[:match.start()].count('\n') + 1,
                         "type": "dynamic_import",
                     })
-        
+
         elif language == "java":
             pattern = r'import\s+([\w.]+);'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -689,7 +586,7 @@ class CodeAnalyzer:
                     "names": [],
                     "line_number": source_code[:match.start()].count('\n') + 1,
                 })
-        
+
         elif language == "csharp":
             pattern = r'using\s+([\w.]+);'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -699,7 +596,7 @@ class CodeAnalyzer:
                     "names": [],
                     "line_number": source_code[:match.start()].count('\n') + 1,
                 })
-        
+
         elif language == "go":
             pattern = r'import\s+(?:\([^)]+\)|["\']([^"\']+)["\'])'
             for match in re.finditer(pattern, source_code, re.MULTILINE):
@@ -710,19 +607,11 @@ class CodeAnalyzer:
                         "names": [],
                         "line_number": source_code[:match.start()].count('\n') + 1,
                     })
-        
+
         return imports
 
     def analyze_multiple_files(self, file_paths: List[str]) -> Dict[str, Dict[str, Any]]:
-        """
-        Analyze multiple files and return results indexed by file path.
 
-        Args:
-            file_paths: List of file paths to analyze
-
-        Returns:
-            Dictionary mapping file paths to analysis results
-        """
         results = {}
         for file_path in file_paths:
             results[file_path] = self.analyze_file(file_path)

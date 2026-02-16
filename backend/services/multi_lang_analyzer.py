@@ -1,32 +1,14 @@
-"""
-Multi-Language Code Analyzer
-
-Analyzes code files in various languages to extract dependencies (imports/requires).
-Supports Python, JavaScript, TypeScript, and other languages.
-"""
-
 import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 
 class MultiLanguageAnalyzer:
-    """Analyzer for extracting dependencies from multiple programming languages."""
 
     def __init__(self):
-        """Initialize the multi-language analyzer."""
         pass
 
     def analyze_file(self, file_path: str) -> Dict[str, Any]:
-        """
-        Analyze a code file and extract dependencies.
-        
-        Args:
-            file_path: Path to the file to analyze
-            
-        Returns:
-            Dictionary with file information and dependencies
-        """
         file_path_obj = Path(file_path)
         
         if not file_path_obj.exists():
@@ -72,7 +54,6 @@ class MultiLanguageAnalyzer:
         }
     
     def _detect_language(self, extension: str) -> Optional[str]:
-        """Detect programming language from file extension."""
         language_map = {
             ".py": "python",
             ".js": "javascript",
@@ -93,7 +74,6 @@ class MultiLanguageAnalyzer:
         return language_map.get(extension)
     
     def _extract_python_imports(self, source_code: str) -> List[Dict[str, Any]]:
-        """Extract Python import statements."""
         imports = []
         
         # Pattern for: import module
@@ -133,7 +113,6 @@ class MultiLanguageAnalyzer:
         return imports
     
     def _extract_js_imports(self, source_code: str, file_path: str) -> List[Dict[str, Any]]:
-        """Extract JavaScript/TypeScript import/require statements."""
         imports = []
         
         lines = source_code.split('\n')
@@ -183,7 +162,6 @@ class MultiLanguageAnalyzer:
         return imports
     
     def _extract_java_imports(self, source_code: str) -> List[Dict[str, Any]]:
-        """Extract Java import statements."""
         imports = []
         
         pattern = r'^import\s+(?:static\s+)?([a-zA-Z0-9_.]+)'
@@ -206,7 +184,6 @@ class MultiLanguageAnalyzer:
         return imports
     
     def _extract_go_imports(self, source_code: str) -> List[Dict[str, Any]]:
-        """Extract Go import statements."""
         imports = []
         
         # Single import: import "package"
@@ -254,7 +231,6 @@ class MultiLanguageAnalyzer:
         return imports
     
     def _extract_rust_imports(self, source_code: str) -> List[Dict[str, Any]]:
-        """Extract Rust use statements."""
         imports = []
         
         pattern = r'^use\s+([a-zA-Z0-9_:.]+)'
@@ -277,8 +253,6 @@ class MultiLanguageAnalyzer:
         return imports
     
     def _extract_generic_imports(self, source_code: str, language: str) -> List[Dict[str, Any]]:
-        """Generic import extraction for other languages."""
-        # Try common patterns
         imports = []
         
         # Pattern: import/require/include statements

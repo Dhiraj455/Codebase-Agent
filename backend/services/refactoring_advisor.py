@@ -1,9 +1,4 @@
-"""
-Refactoring Strategy Generator Service
 
-Generates incremental refactoring suggestions based on code smells and issues.
-Important: Does NOT rewrite code, only suggests actionable steps.
-"""
 
 import json
 from typing import Dict, List, Any, Optional
@@ -14,7 +9,7 @@ from .llm_reasoner import LLMReasoner
 
 
 class RefactoringStep(BaseModel):
-    """A single refactoring step."""
+
 
     step_number: int = Field(description="Ordered step number")
     description: str = Field(description="What to do in this step")
@@ -25,7 +20,7 @@ class RefactoringStep(BaseModel):
 
 
 class RefactoringStrategy(BaseModel):
-    """Complete refactoring strategy for an issue."""
+
 
     issue_description: str = Field(description="Description of the issue being addressed")
     severity: str = Field(description="Severity level: high, medium, or low")
@@ -49,20 +44,14 @@ class RefactoringStrategy(BaseModel):
 
 
 class RefactoringAdvisor:
-    """Service for generating refactoring strategies."""
+
 
     def __init__(
         self,
         code_smell_detector: Optional[CodeSmellDetector] = None,
         llm_reasoner: Optional[LLMReasoner] = None,
     ):
-        """
-        Initialize the refactoring advisor.
 
-        Args:
-            code_smell_detector: Optional CodeSmellDetector instance
-            llm_reasoner: Optional LLMReasoner instance
-        """
         self.code_smell_detector = code_smell_detector or CodeSmellDetector()
         self.llm_reasoner = llm_reasoner
 
@@ -71,19 +60,9 @@ class RefactoringAdvisor:
         code_smells: List[Dict[str, Any]],
         file_analyses: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        Generate refactoring strategies for detected code smells.
 
-        Args:
-            code_smells: List of detected code smells
-            file_analyses: Optional file analyses for additional context
-
-        Returns:
-            List of refactoring strategies
-        """
         strategies = []
 
-        # Group smells by issue type for batch processing
         smells_by_issue = {}
         for smell in code_smells:
             issue_type = smell.get("issue", "Unknown")
@@ -91,22 +70,17 @@ class RefactoringAdvisor:
                 smells_by_issue[issue_type] = []
             smells_by_issue[issue_type].append(smell)
 
-        # Generate strategy for each unique issue type
         for issue_type, smells in smells_by_issue.items():
-            # Use the highest severity smell as the primary one
             primary_smell = max(smells, key=lambda s: self._severity_value(s.get("severity", "low")))
 
             if self.llm_reasoner:
-                # Use LLM for nuanced refactoring strategies
                 strategy = self._generate_llm_strategy(primary_smell, smells, file_analyses)
             else:
-                # Use rule-based strategies
                 strategy = self._generate_rule_based_strategy(primary_smell, smells)
 
             if strategy:
                 strategies.append(strategy)
 
-        # Sort by severity (high priority first)
         strategies.sort(key=lambda s: self._severity_value(s.get("severity", "low")))
 
         return strategies
@@ -117,21 +91,10 @@ class RefactoringAdvisor:
         related_smells: List[Dict[str, Any]],
         file_analyses: Optional[List[Dict[str, Any]]],
     ) -> Optional[Dict[str, Any]]:
-        """
-        Generate refactoring strategy using LLM.
 
-        Args:
-            primary_smell: Primary code smell to address
-            related_smells: Related smells of the same type
-            file_analyses: Optional file analyses for context
-
-        Returns:
-            Refactoring strategy dictionary
-        """
         if not self.llm_reasoner:
             return None
 
-        # Build context
         context = {
             "issue": primary_smell.get("issue", ""),
             "description": primary_smell.get("description", ""),
@@ -142,9 +105,7 @@ class RefactoringAdvisor:
             "related_occurrences": len(related_smells),
         }
 
-        # Add file context if available
         if file_analyses:
-            # Find relevant file analysis
             location = primary_smell.get("location", "")
             for analysis in file_analyses:
                 if analysis.get("file_name", "") in location:
@@ -167,79 +128,28 @@ class RefactoringAdvisor:
                     }
                     break
 
-        # Build prompt
-        prompt = f"""You are a senior software engineer providing refactoring guidance.
-
-## Issue to Address:
-**Issue Type:** {context['issue']}
-**Description:** {context['description']}
-**Location:** {context['location']}
-**Impact:** {context['impact']}
-**Severity:** {context['severity']}
-**Occurrences:** {context['related_occurrences']} similar issues found
-
-## Current Suggestion:
-{context.get('suggestion', 'None provided')}
-
-## Your Task:
-Generate a detailed, incremental refactoring strategy. **IMPORTANT: Do NOT rewrite code. Only provide step-by-step guidance.**
-
-The strategy should include:
-1. **Suggested Steps**: Ordered, incremental steps that can be done one at a time
-2. **Risk Assessment**: What could go wrong and how to mitigate
-3. **Estimated Effort**: Realistic time estimate
-4. **Prerequisites**: What needs to be in place first
-5. **Testing Considerations**: How to ensure nothing breaks
-
-Each step should:
-- Be actionable and specific
-- Build on previous steps
-- Be testable independently
-- Minimize risk
-
-Return a JSON object with this structure:
-{{
-    "issue_description": "description of the issue",
-    "severity": "high|medium|low",
-    "suggested_steps": [
-        {{
-            "step_number": 1,
-            "description": "what to do",
-            "rationale": "why this step",
-            "code_example": "optional example pattern"
-        }},
-        ...
-    ],
-    "risk_assessment": "assessment of risks",
-    "estimated_effort": "e.g., '2-4 hours'",
-    "prerequisites": ["prerequisite1", ...],
-    "testing_considerations": ["consideration1", ...]
-}}
-
-Focus on incremental, safe refactoring. Do not provide full code rewrites.
-"""
+        prompt = f
 
         try:
-            response = self.llm_reasoner.client.chat.completions.create(
-                model=self.llm_reasoner.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a senior software engineer. Always respond with valid JSON only. Never rewrite entire code, only provide guidance.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                response_format={"type": "json_object"},
+            import google.generativeai as genai
+
+            full_prompt = f
+
+            generation_config = genai.types.GenerationConfig(
                 temperature=0.3,
+                response_mime_type="application/json",
             )
 
-            content = response.choices[0].message.content
+            response = self.llm_reasoner.model.generate_content(
+                full_prompt,
+                generation_config=generation_config,
+            )
 
-            # Parse JSON
+            content = response.text
+
             try:
                 json_data = json.loads(content)
             except json.JSONDecodeError:
-                # Try to extract from markdown
                 if "```json" in content:
                     json_start = content.find("```json") + 7
                     json_end = content.find("```", json_start)
@@ -251,32 +161,20 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
                 else:
                     raise ValueError("Failed to parse JSON from LLM response")
 
-            # Validate with Pydantic
             validated = RefactoringStrategy(**json_data)
             return validated.model_dump()
 
         except Exception as e:
             print(f"LLM strategy generation failed: {e}")
-            # Fallback to rule-based
             return self._generate_rule_based_strategy(primary_smell, related_smells)
 
     def _generate_rule_based_strategy(
         self, primary_smell: Dict[str, Any], related_smells: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """
-        Generate refactoring strategy using rule-based approach.
 
-        Args:
-            primary_smell: Primary code smell
-            related_smells: Related smells
-
-        Returns:
-            Refactoring strategy dictionary
-        """
         issue_type = primary_smell.get("issue", "")
         severity = primary_smell.get("severity", "medium")
 
-        # Rule-based strategies for common issues
         strategies = {
             "God Class": self._god_class_strategy(primary_smell, related_smells),
             "High Cyclomatic Complexity": self._complexity_strategy(
@@ -293,7 +191,6 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
             ),
         }
 
-        # Get strategy or use generic one
         strategy = strategies.get(issue_type, self._generic_strategy(primary_smell))
 
         return strategy
@@ -301,7 +198,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
     def _god_class_strategy(
         self, smell: Dict[str, Any], related: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate strategy for God Class refactoring."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "high"),
@@ -352,7 +249,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
     def _complexity_strategy(
         self, smell: Dict[str, Any], related: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate strategy for high complexity refactoring."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "medium"),
@@ -398,7 +295,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
     def _circular_dependency_strategy(
         self, smell: Dict[str, Any], related: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate strategy for circular dependency refactoring."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "high"),
@@ -447,7 +344,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
     def _tight_coupling_strategy(
         self, smell: Dict[str, Any], related: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate strategy for tight coupling refactoring."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "medium"),
@@ -495,7 +392,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
     def _docstring_strategy(
         self, smell: Dict[str, Any], related: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate strategy for missing docstring refactoring."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "low"),
@@ -504,7 +401,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
                     "step_number": 1,
                     "description": "Add docstring describing the class/function purpose",
                     "rationale": "Improves code documentation and maintainability",
-                    "code_example": '"""Brief description of what this does."""',
+                    "code_example": '',
                 },
                 {
                     "step_number": 2,
@@ -529,7 +426,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
     def _large_function_strategy(
         self, smell: Dict[str, Any], related: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate strategy for large function refactoring."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "medium"),
@@ -572,7 +469,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
     def _many_parameters_strategy(
         self, smell: Dict[str, Any], related: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Generate strategy for too many parameters refactoring."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "medium"),
@@ -614,7 +511,7 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
         }
 
     def _generic_strategy(self, smell: Dict[str, Any]) -> Dict[str, Any]:
-        """Generic strategy for unknown issue types."""
+
         return {
             "issue_description": smell.get("description", ""),
             "severity": smell.get("severity", "medium"),
@@ -650,25 +547,10 @@ Focus on incremental, safe refactoring. Do not provide full code rewrites.
         }
 
     def _severity_value(self, severity: str) -> int:
-        """Convert severity string to numeric value for sorting."""
+
         severity_map = {"high": 0, "medium": 1, "low": 2}
         return severity_map.get(severity.lower(), 2)
 
 
-# Example usage
 if __name__ == "__main__":
-    # Example: Generate refactoring strategies
-    # advisor = RefactoringAdvisor()
-    #
-    # code_smells = [...]  # From code_smell_detector
-    # file_analyses = [...]  # From code_analyzer
-    #
-    # strategies = advisor.generate_refactoring_strategies(code_smells, file_analyses)
-    #
-    # for strategy in strategies:
-    #     print(f"\n{strategy['severity'].upper()}: {strategy['issue_description']}")
-    #     print(f"Effort: {strategy['estimated_effort']}")
-    #     print("Steps:")
-    #     for step in strategy['suggested_steps']:
-    #         print(f"  {step['step_number']}. {step['description']}")
-    pass  # Placeholder for example code
+    pass

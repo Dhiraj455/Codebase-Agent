@@ -41,7 +41,6 @@ FastAPI backend for codebase understanding and refactoring analysis.
 
 - `POST /api/analyze` - Analyze a GitHub repository
 - `POST /api/ask` - Ask questions about the codebase
-- `GET /api/graph` - Get dependency graph
 
 ## Project Structure
 
@@ -53,8 +52,7 @@ backend/
 │   └── schemas.py       # Pydantic models
 ├── routers/
 │   ├── analyze.py       # Analysis endpoints
-│   ├── chat.py          # Chat/Q&A endpoints
-│   └── graph.py         # Graph endpoints
+│   └── chat.py          # Chat/Q&A endpoints
 ├── services/
 │   ├── repo_ingestion.py
 │   ├── code_analyzer.py

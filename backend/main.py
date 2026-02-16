@@ -1,8 +1,4 @@
-"""
-FastAPI Application - Codebase Analysis API
 
-Main FastAPI application for codebase understanding and refactoring analysis.
-"""
 
 import os
 from pathlib import Path
@@ -15,12 +11,9 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-# Look for .env file in the backend directory
 env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-# Import services
 from services.repo_ingestion import RepoIngestionService
 from services.code_analyzer import CodeAnalyzer
 from services.dependency_graph import DependencyGraphBuilder
@@ -31,30 +24,21 @@ from services.code_smell_detector import CodeSmellDetector
 from services.refactoring_advisor import RefactoringAdvisor
 
 
-# Global service instances (initialized in lifespan)
 services: Dict[str, Any] = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for startup and shutdown events.
-    
-    Initializes services on startup and cleans up on shutdown.
-    """
-    # Startup: Initialize services
+
     print("Initializing services...")
-    
-    # Initialize core services
+
     code_analyzer = CodeAnalyzer()
     dependency_graph_builder = DependencyGraphBuilder(code_analyzer=code_analyzer)
-    
-    # Initialize LLM reasoner if API key is available
+
     llm_reasoner = None
     try:
         api_key = os.getenv("GEMINI_API_KEY")
         if api_key:
-            # Check if API key looks valid (not placeholder)
             if api_key.strip() and api_key != "your_gemini_api_key_here":
                 model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
                 llm_reasoner = LLMReasoner(api_key=api_key, model=model, code_analyzer=code_analyzer)
@@ -67,14 +51,13 @@ async def lifespan(app: FastAPI):
             print(f"  .env file exists: {env_path.exists()}")
     except Exception as e:
         print(f"Warning: Failed to initialize LLM Reasoner: {e}")
-    
-    # Initialize other services
+
     repo_ingestion = RepoIngestionService(
         cache_dir=os.getenv("REPO_CACHE_DIR", "./repos")
     )
-    
+
     chunking_service = CodeChunkingService(code_analyzer=code_analyzer)
-    
+
     embeddings_service = None
     try:
         api_key = os.getenv("GEMINI_API_KEY")
@@ -88,19 +71,18 @@ async def lifespan(app: FastAPI):
             print("Warning: GEMINI_API_KEY not set. Embeddings features will be disabled.")
     except Exception as e:
         print(f"Warning: Failed to initialize Embeddings Service: {e}")
-    
+
     code_smell_detector = CodeSmellDetector(
         code_analyzer=code_analyzer,
         dependency_graph_builder=dependency_graph_builder,
         llm_reasoner=llm_reasoner,
     )
-    
+
     refactoring_advisor = RefactoringAdvisor(
         code_smell_detector=code_smell_detector,
         llm_reasoner=llm_reasoner,
     )
-    
-    # Store services globally
+
     services["repo_ingestion"] = repo_ingestion
     services["code_analyzer"] = code_analyzer
     services["dependency_graph_builder"] = dependency_graph_builder
@@ -109,16 +91,14 @@ async def lifespan(app: FastAPI):
     services["llm_reasoner"] = llm_reasoner
     services["code_smell_detector"] = code_smell_detector
     services["refactoring_advisor"] = refactoring_advisor
-    
+
     print("All services initialized successfully")
-    
+
     yield
-    
-    # Shutdown: Cleanup (if needed)
+
     print("Shutting down services...")
 
 
-# Initialize FastAPI app
 app = FastAPI(
     title="Codebase Analysis API",
     description="API for analyzing codebases, detecting code smells, and generating refactoring strategies",
@@ -126,23 +106,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Store services in app state for dependency injection
 @app.middleware("http")
 async def add_services_to_request(request: Request, call_next):
-    """Add services to request state for dependency injection."""
-    # Access the global services dictionary (defined above)
+
     request.state.services = services
     response = await call_next(request)
     return response
 
-# Configure CORS for Next.js frontend
 origins = [
     "http://localhost:3000",  # Next.js dev server
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
-    # Add production origins if needed
-    # "https://yourdomain.com",
 ]
 
 app.add_middleware(
@@ -154,10 +129,9 @@ app.add_middleware(
 )
 
 
-# Error handlers
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Handle HTTP exceptions."""
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -170,7 +144,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Handle validation errors."""
+
     return JSONResponse(
         status_code=422,
         content={
@@ -184,7 +158,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """Handle general exceptions."""
+
     return JSONResponse(
         status_code=500,
         content={
@@ -196,10 +170,9 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Health check endpoint
 @app.get("/")
 async def root():
-    """Root endpoint - returns API information."""
+
     return {
         "name": "Codebase Analysis API",
         "version": "1.0.0",
@@ -208,64 +181,53 @@ async def root():
             "health": "/health",
             "analyze": "/api/analyze",
             "ask": "/api/ask",
-            "graph": "/api/graph",
         },
     }
 
 
 @app.get("/health")
 async def health_check():
-    """
-    Health check endpoint.
-    
-    Returns the health status of the API and its services.
-    """
+
     health_status = {
         "status": "healthy",
         "api": "running",
         "services": {},
     }
-    
-    # Check service availability
+
     services_status = {}
-    
-    # Check core services (should always be available)
+
     services_status["repo_ingestion"] = "available" if "repo_ingestion" in services else "unavailable"
     services_status["code_analyzer"] = "available" if "code_analyzer" in services else "unavailable"
     services_status["dependency_graph_builder"] = "available" if "dependency_graph_builder" in services else "unavailable"
     services_status["chunking_service"] = "available" if "chunking_service" in services else "unavailable"
-    
-    # Check optional services
+
     services_status["embeddings_service"] = "available" if services.get("embeddings_service") else "unavailable"
     services_status["llm_reasoner"] = "available" if services.get("llm_reasoner") else "unavailable"
-    
+
     health_status["services"] = services_status
-    
-    # Determine overall health
+
     critical_services = ["repo_ingestion", "code_analyzer", "dependency_graph_builder"]
     if all(services_status.get(svc) == "available" for svc in critical_services):
         health_status["status"] = "healthy"
     else:
         health_status["status"] = "degraded"
         health_status["message"] = "Some critical services are unavailable"
-    
+
     return health_status
 
 
-# Include routers
-from routers import analyze, chat, graph
+from routers import analyze, chat
 
 app.include_router(analyze.router)
 app.include_router(chat.router)
-app.include_router(graph.router)
 
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
-    
+
     uvicorn.run(
         "main:app",
         host=host,
